@@ -1,0 +1,43 @@
+//this function will enable dynamic breadcrumbs for products that exist in multiple categories. 
+
+function breadcumbs_referred_or_primary ($main, $terms)
+{
+
+  $referer = wp_get_referer();
+  $referredTerm = -1;
+  $referredTermIndex = -1;
+  $primaryTermId = 99; // hardcoded
+  $primaryTermIndex = -1;
+
+  foreach($terms as $key => $term) {
+    if ($referredTerm != -1) break; // 
+
+    $ancestors = get_ancestors( $term->term_id, 'product_cat');
+    array_unshift($ancestors, $term->term_id);
+    if ($primaryTermIndex == -1 && in_array($primaryTermId, $ancestors)) $primaryTermIndex = $key;
+
+    foreach ($ancestors as $ancestor) {
+      if($referredTerm != -1) break 2; // 
+      $ancestor = get_term( $ancestor, 'product_cat' );
+      $referer_slug = (strpos($referer, '/'.$ancestor->slug.'/'));
+
+      if (!$referer_slug==false) { // it's found in the current level
+        $referredTerm = $term->term_id;
+        $referredTermIndex = $key;
+      }
+    }
+  }
+
+  // will return either the referred category or the primary category
+  if ($referredTermIndex != -1) {
+    return $terms[$referredTermIndex];
+  } else {
+    return $terms[0];
+  }
+}
+
+add_filter('woocommerce_breadcrumb_main_term', 'breadcumbs_referred_or_primary', 10, 2);
+
+
+
+
